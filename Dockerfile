@@ -1,4 +1,9 @@
-FROM node:24-bookworm-slim AS build
+FROM node:24-bookworm-slim AS base
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM base AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
@@ -7,7 +12,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:24-bookworm-slim AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -18,7 +23,6 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci --omit=dev && mkdir -p /app/data && chown -R node:node /app
 COPY --from=build --chown=node:node /app/.next ./.next
-COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/next.config.ts ./next.config.ts
 USER node
 EXPOSE 3000
