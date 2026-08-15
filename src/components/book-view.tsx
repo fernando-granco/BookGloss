@@ -23,8 +23,19 @@ export function BookView({ bookId }: { bookId: string }) {
   const [details, setDetails] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
   const [search, setSearch] = useState(""); const [sort, setSort] = useState<Sort>("recent"); const [favorites, setFavorites] = useState(false);
   const [editing, setEditing] = useState<VocabularyWord | null>(null); const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [loadError, setLoadError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null); const searchRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { void Promise.all([request<BookDetail>(`/api/books/${bookId}`), request<SettingsData>("/api/settings")]).then(([data, settings]) => { setBook(data); setShowAllLanguages(settings.showAllLanguages); requestAnimationFrame(() => inputRef.current?.focus()); }); }, [bookId]);
+  useEffect(() => {
+    let cancelled = false;
+    // Settled separately so a settings failure cannot strand the page on its loading state.
+    void Promise.allSettled([request<BookDetail>(`/api/books/${bookId}`), request<SettingsData>("/api/settings")]).then(([data, settings]) => {
+      if (cancelled) return;
+      if (settings.status === "fulfilled") setShowAllLanguages(settings.value.showAllLanguages);
+      if (data.status === "fulfilled") { setBook(data.value); requestAnimationFrame(() => inputRef.current?.focus()); }
+      else setLoadError(data.reason instanceof Error ? data.reason.message : "Could not open this book");
+    });
+    return () => { cancelled = true; };
+  }, [bookId]);
   useEffect(() => { const handler = (e: KeyboardEvent) => { if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") { e.preventDefault(); searchRef.current?.focus(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, []);
 
   async function add(event: React.FormEvent) {
@@ -54,6 +65,7 @@ export function BookView({ bookId }: { bookId: string }) {
     return [...words].sort((a, b) => sort === "oldest" ? +new Date(a.createdAt) - +new Date(b.createdAt) : sort === "az" ? a.original.localeCompare(b.original) : sort === "za" ? b.original.localeCompare(a.original) : sort === "encounters" ? b.encounterCount - a.encounterCount : +new Date(b.createdAt) - +new Date(a.createdAt));
   }, [book, favorites, search, sort]);
 
+  if (loadError) return <main className="shell page"><Link href="/" className="back-link"><ArrowLeft size={17} /> Books</Link><section className="empty"><h2>Could not open this book</h2><p role="alert">{loadError}</p></section></main>;
   if (!book) return <main className="shell page"><div className="empty"><span className="spinner" /> Opening book…</div></main>;
   return <main className="shell page book-page">
     <Link href="/" className="back-link"><ArrowLeft size={17} /> Books</Link>

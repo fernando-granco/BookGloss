@@ -55,7 +55,8 @@ export async function PATCH(request: Request, { params }: Context) {
       data.original = input.original;
       data.normalizedOriginal = normalizeWord(input.original);
     }
-    if (input.translation !== undefined) {
+    // Saving the form resubmits the displayed translation, so only a real change counts as a manual edit.
+    if (input.translation !== undefined && input.translation !== current.translation) {
       data.translation = input.translation;
       data.translationManuallyEdited = true;
       historyManuallyEdited = true;
