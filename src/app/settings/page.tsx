@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { languages } from "@/lib/languages";
 import type { SettingsData } from "@/lib/types";
 
-const initial: SettingsData = { defaultSourceLanguage: "en", defaultTargetLanguage: "pt", appearance: "system" };
+const initial: SettingsData = { defaultSourceLanguage: "fr", defaultTargetLanguage: "en", appearance: "system" };
 
 export default function SettingsPage() {
   const [form, setForm] = useState(initial); const [configured, setConfigured] = useState(false); const [saved, setSaved] = useState(false); const [error, setError] = useState(""); const [busy, setBusy] = useState(true);

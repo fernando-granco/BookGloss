@@ -8,7 +8,7 @@ import { Modal } from "@/components/modal";
 import { languageName } from "@/lib/languages";
 import type { BookSummary, SettingsData } from "@/lib/types";
 
-const fallback: SettingsData = { defaultSourceLanguage: "en", defaultTargetLanguage: "pt", appearance: "system" };
+const fallback: SettingsData = { defaultSourceLanguage: "fr", defaultTargetLanguage: "en", appearance: "system" };
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);

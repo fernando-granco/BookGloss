@@ -40,7 +40,8 @@ export function BookView({ bookId }: { bookId: string }) {
     const updated = await request<VocabularyWord>(`/api/words/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
     setBook((current) => current ? { ...current, words: current.words.map((item) => item.id === id ? updated : item) } : current); return updated;
   }
-  async function saveEdit(input: WordInput, retranslate = false) { await patchWord(editing!.id, { ...input, retranslate }); setEditing(null); inputRef.current?.focus(); }
+  async function saveEdit(input: WordInput) { await patchWord(editing!.id, input); setEditing(null); inputRef.current?.focus(); }
+  async function retranslateEdit(input: WordInput) { return patchWord(editing!.id, { ...input, retranslate: true }); }
   async function remove(item: VocabularyWord) {
     if (!confirm(`Delete “${item.original}”?`)) return; await request(`/api/words/${item.id}`, { method: "DELETE" });
     setBook((current) => current ? { ...current, words: current.words.filter((wordItem) => wordItem.id !== item.id), _count: { words: current._count.words - 1 } } : current);
@@ -66,10 +67,10 @@ export function BookView({ bookId }: { bookId: string }) {
     {visible.length === 0 ? <section className="empty compact"><h2>{book.words.length ? "No matching words" : "No words yet"}</h2><p>{book.words.length ? "Try another search or filter." : "When you find a word you don’t know, type it above."}</p></section> : <section className="word-list" aria-label="Vocabulary">{visible.map((item) => <article key={item.id} className="word-row">
       <button className={`star-button ${item.favorite ? "active" : ""}`} onClick={() => void patchWord(item.id, { favorite: !item.favorite })} aria-label={item.favorite ? "Remove from favorites" : "Add to favorites"}><Star fill={item.favorite ? "currentColor" : "none"} /></button>
       <div className="word-pair"><button className="word-original" onClick={() => { if (item.context) setExpanded((current) => { const next = new Set(current); if (next.has(item.id)) next.delete(item.id); else next.add(item.id); return next; }); }}>{item.original}{item.context && <ChevronDown size={14} className={expanded.has(item.id) ? "rotated" : ""} />}</button>{expanded.has(item.id) && item.context && <p className="context">“{item.context}”</p>}</div>
-      <button className="translation" onClick={() => setEditing(item)} title="Edit translation">{item.translation}</button>
+      <button className="translation" onClick={() => setEditing(item)} title="Edit translation"><span>{item.translation}</span><small>{languageName(item.translationLanguage)}</small></button>
       <div className="word-meta">{item.page && <span>p. {item.page}</span>}{item.encounterCount > 1 && <strong>{item.encounterCount}×</strong>}</div>
       <div className="row-actions"><button className="icon-button" onClick={() => setEditing(item)} aria-label={`Edit ${item.original}`}><Pencil /></button><button className="icon-button danger" onClick={() => void remove(item)} aria-label={`Delete ${item.original}`}><Trash2 /></button></div>
     </article>)}</section>}
-    <Modal title="Edit word" open={Boolean(editing)} onClose={() => setEditing(null)}>{editing && <WordForm word={editing} onSubmit={(input) => saveEdit(input)} onRetranslate={(input) => saveEdit(input, true)} onCancel={() => setEditing(null)} />}</Modal>
+    <Modal title="Edit word" open={Boolean(editing)} onClose={() => setEditing(null)}>{editing && <WordForm word={editing} sourceLanguage={book.sourceLanguage} onSubmit={saveEdit} onRetranslate={retranslateEdit} onTranslateTo={(language) => patchWord(editing.id, { translateToLanguage: language })} onSelectTranslation={(language) => patchWord(editing.id, { selectTranslationLanguage: language })} onCancel={() => setEditing(null)} />}</Modal>
   </main>;
 }
