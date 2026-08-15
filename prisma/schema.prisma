@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Book {
+  id             String   @id @default(cuid())
+  title          String
+  author         String?
+  sourceLanguage String
+  targetLanguage String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  words          Word[]
+}
+
+model Word {
+  id                        String   @id @default(cuid())
+  bookId                    String
+  book                      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  original                  String
+  normalizedOriginal        String
+  translation               String
+  context                   String?
+  page                      Int?
+  encounterCount            Int      @default(1)
+  favorite                  Boolean  @default(false)
+  translationManuallyEdited Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  lastEncounteredAt         DateTime @default(now())
+
+  @@unique([bookId, normalizedOriginal])
+  @@index([bookId, createdAt])
+  @@index([bookId, favorite])
+}
+
+model Settings {
+  id                        String   @id @default("singleton")
+  defaultSourceLanguage     String   @default("en")
+  defaultTargetLanguage     String   @default("pt")
+  appearance                String   @default("system")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
