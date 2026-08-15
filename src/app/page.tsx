@@ -20,10 +20,16 @@ export default function BooksPage() {
   const [books, setBooks] = useState<BookSummary[]>([]);
   const [settings, setSettings] = useState(fallback);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [editing, setEditing] = useState<BookSummary | null | undefined>(undefined);
   const load = useCallback(async () => {
-    try { const [items, saved] = await Promise.all([request<BookSummary[]>("/api/books"), request<SettingsData>("/api/settings")]); setBooks(items); setSettings(saved); }
-    finally { setLoading(false); }
+    // Settings only prefill the book form, so a settings failure must never hide the library.
+    try {
+      const [items, saved] = await Promise.allSettled([request<BookSummary[]>("/api/books"), request<SettingsData>("/api/settings")]);
+      if (items.status === "fulfilled") { setBooks(items.value); setError(""); }
+      else setError(items.reason instanceof Error ? items.reason.message : "Could not load your library");
+      if (saved.status === "fulfilled") setSettings(saved.value);
+    } finally { setLoading(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
   async function save(input: BookInput) {
@@ -32,12 +38,16 @@ export default function BooksPage() {
   }
   async function remove(book: BookSummary) {
     if (!confirm(`Delete “${book.title}” and all its saved words? This cannot be undone.`)) return;
-    await request(`/api/books/${book.id}`, { method: "DELETE" }); await load();
+    try { await request(`/api/books/${book.id}`, { method: "DELETE" }); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not delete the book"); }
+    await load();
   }
   return (
     <main className="shell page">
       <div className="page-title"><div><p className="eyebrow">Your library</p><h1>Books</h1><p>Every unfamiliar word, kept with the story where you found it.</p></div><button className="button" onClick={() => setEditing(null)}><Plus size={18} /> Add book</button></div>
-      {loading ? <div className="empty"><span className="spinner" /> Loading your library…</div> : books.length === 0 ? (
+      {loading ? <div className="empty"><span className="spinner" /> Loading your library…</div> : error ? (
+        <section className="empty"><BookOpen size={35} /><h2>Could not load your library</h2><p role="alert">{error}</p><button className="button" onClick={() => void load()}>Try again</button></section>
+      ) : books.length === 0 ? (
         <section className="empty"><BookOpen size={35} /><h2>No books yet</h2><p>Add the book you’re currently reading and start collecting new words.</p><button className="button" onClick={() => setEditing(null)}><Plus size={18} /> Add your first book</button></section>
       ) : <section className="book-grid">{books.map((book) => (
         <article className="book-card" key={book.id}>
