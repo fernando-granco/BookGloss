@@ -101,6 +101,18 @@ docker cp bookgloss:/app/data/vocabulary.db backups/vocabulary-$(date +%Y-%m-%d)
 docker compose start bookgloss
 ```
 
+To restore a backup, stop the container so nothing is mid-write, copy the file back into
+the volume, and start again:
+
+```bash
+docker compose stop bookgloss
+docker cp backups/vocabulary-2026-08-15.db bookgloss:/app/data/vocabulary.db
+docker compose start bookgloss
+```
+
+A restored database is migrated forward automatically on the next start, so an older
+backup can be restored onto a newer BookGloss image.
+
 Do not run `docker compose down -v` unless you intend to delete all saved vocabulary.
 
 ## Updating
