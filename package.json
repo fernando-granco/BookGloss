@@ -1,8 +1,21 @@
 {
   "name": "bookgloss",
   "version": "0.1.0",
+  "description": "A calm, keyboard-first reading companion for collecting unfamiliar words.",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fernando-granco/BookGloss.git"
+  },
+  "homepage": "https://github.com/fernando-granco/BookGloss#readme",
+  "bugs": {
+    "url": "https://github.com/fernando-granco/BookGloss/issues"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

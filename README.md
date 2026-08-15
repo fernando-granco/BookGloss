@@ -1,23 +1,46 @@
-# BookGloss
+<div align="center">
+  <h1>BookGloss</h1>
+  <p>A quiet, keyboard-first home for the words you meet while reading.</p>
+</div>
 
-BookGloss is a calm, keyboard-first reading companion for saving unfamiliar words under the book where you found them. Enter a word, press Enter, and BookGloss translates and saves it. Repeated words increment an encounter count without overwriting a translation you edited by hand.
+BookGloss keeps unfamiliar words attached to the books where you found them. Type a word, press Enter, and it is translated and saved. The input clears and focuses again so you can return to reading immediately.
 
-## Screenshots
+## What it does
 
-_Screenshots will be added after the first deployment._
+- Organizes vocabulary by book and language pair
+- Translates through Google Cloud Translation on the server
+- Counts repeated encounters without creating duplicate rows
+- Preserves translations you edit by hand
+- Stores optional page numbers, context, and favorites
+- Searches, filters, and sorts each book’s vocabulary
+- Supports polished light, dark, and system themes
+- Runs as one Docker container with persistent SQLite storage
 
-## Requirements
+BookGloss intentionally has no accounts, analytics, gamification, flashcards, or additional services.
 
-- Docker Engine with Docker Compose (recommended), or Node.js 24+
-- A Google Cloud project with the Cloud Translation API enabled
-- A restricted API key or service account allowed to use Cloud Translation
+## Quick start with Docker
 
-## Google Cloud Translation setup
+Requirements: Docker Engine with Docker Compose and a Google Cloud project with the Cloud Translation API enabled.
+
+```bash
+git clone https://github.com/fernando-granco/BookGloss.git
+cd BookGloss
+cp .env.example .env
+# Add your Google Translation credentials to .env
+docker compose up -d --build
+```
+
+Open [http://localhost:3000](http://localhost:3000). The container applies database migrations automatically and reports its health through `/api/status`.
+
+## Google Cloud Translation
+
+The simplest option is a Google Cloud API key:
 
 1. Enable **Cloud Translation API** in your Google Cloud project.
-2. For the simplest setup, create an API key, restrict it to the Cloud Translation API, and set `GOOGLE_TRANSLATE_API_KEY` in `.env`.
+2. Create an API key and restrict it to the Cloud Translation API.
+3. Set `GOOGLE_TRANSLATE_API_KEY` in `.env`.
 
-For service-account authentication instead, download its JSON key and encode it as a single base64 line:
+Service-account authentication is also supported. Encode the downloaded JSON key as one base64 line and set `GOOGLE_CLOUD_PROJECT_ID` and `GOOGLE_CLOUD_CREDENTIALS_BASE64`:
 
 ```powershell
 [Convert]::ToBase64String([IO.File]::ReadAllBytes("service-account.json"))
@@ -27,32 +50,24 @@ For service-account authentication instead, download its JSON key and encode it 
 base64 -w 0 service-account.json
 ```
 
-Copy `.env.example` to `.env`, then configure either the API key or the service-account variables. Never commit `.env` or the JSON key.
+For local development, you may instead set `GOOGLE_APPLICATION_CREDENTIALS` to an Application Default Credentials JSON path. Credentials are only read by the server and are never stored in SQLite or sent to browser code.
 
-For local development, Application Default Credentials are also supported through `GOOGLE_APPLICATION_CREDENTIALS`.
-
-## Environment variables
+## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `3000` | Published Docker port |
-| `DATABASE_URL` | `file:./dev.db` locally | Prisma SQLite location (relative to `prisma/schema.prisma`) |
-| `GOOGLE_CLOUD_PROJECT_ID` | empty | Google Cloud project |
+| `DATABASE_URL` | `file:./dev.db` locally | Prisma SQLite location, relative to `prisma/schema.prisma` |
 | `GOOGLE_TRANSLATE_API_KEY` | empty | Restricted Translation API key |
+| `GOOGLE_CLOUD_PROJECT_ID` | empty | Google Cloud project for service-account authentication |
 | `GOOGLE_CLOUD_CREDENTIALS_BASE64` | empty | Base64 service-account JSON for Docker |
 | `GOOGLE_APPLICATION_CREDENTIALS` | empty | Optional local ADC JSON path |
 
-## Run with Docker
+Copy `.env.example` to `.env`; never commit `.env`, database files, or credential JSON.
 
-```bash
-cp .env.example .env
-# Edit .env with Google Cloud credentials
-docker compose up -d --build
-```
+## Local development
 
-Open `http://localhost:3000`. The container applies pending Prisma migrations before starting the app. The `/api/status` endpoint is used by the container health check.
-
-## Run locally
+BookGloss requires Node.js 24 or newer.
 
 ```bash
 cp .env.example .env
@@ -61,7 +76,7 @@ npm run db:deploy
 npm run dev
 ```
 
-Useful checks:
+Before opening a pull request, run:
 
 ```bash
 npm run lint
@@ -70,9 +85,9 @@ npm test
 npm run build
 ```
 
-## Persistence and backups
+## Data and backups
 
-Docker Compose stores SQLite in the named volume `bookgloss-data`, mounted at `/app/data`. Rebuilding or replacing the container does not remove the volume.
+Docker Compose stores SQLite in the named volume `bookgloss-data`, mounted at `/app/data`. Rebuilding or replacing the container keeps the volume intact.
 
 For a consistent raw-file backup, briefly stop writes, copy the database, and restart:
 
@@ -83,18 +98,25 @@ docker cp bookgloss:/app/data/vocabulary.db backups/vocabulary-$(date +%Y-%m-%d)
 docker compose start bookgloss
 ```
 
-Do not use `docker compose down -v` unless you intentionally want to delete all stored vocabulary. Restore by stopping the service and copying a backup to `/app/data/vocabulary.db`.
+Do not run `docker compose down -v` unless you intend to delete all saved vocabulary.
 
 ## Updating
 
 ```bash
 git pull
 docker compose up -d --build
-docker image prune -f
 ```
 
-Migrations run automatically and the named volume remains intact. Take a backup before significant upgrades.
+Pending migrations run automatically. Take a backup before significant upgrades.
 
 ## Architecture
 
-BookGloss is one Next.js application and one container. React renders the responsive interface; route handlers validate all writes with Zod; server-only services call Google Cloud Translation; Prisma reads and writes SQLite. A unique `(bookId, normalizedOriginal)` constraint prevents duplicate words, and deleting a book cascades to its vocabulary. There are no accounts, queues, caches, or additional services.
+BookGloss is a single Next.js application. React renders the responsive interface, route handlers validate writes with Zod, a server-only service calls Google Cloud Translation, and Prisma reads and writes SQLite. A unique `(bookId, normalizedOriginal)` constraint prevents duplicates, while deleting a book cascades to its vocabulary.
+
+## Security
+
+BookGloss has no built-in authentication. Keep it on a private network or place it behind a trusted VPN or authenticated reverse proxy. See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+## Contributing and license
+
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). BookGloss is available under the [MIT License](LICENSE).
