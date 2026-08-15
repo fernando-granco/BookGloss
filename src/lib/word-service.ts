@@ -1,12 +1,14 @@
-import type { Book, Word } from "@prisma/client";
+import type { Book, Word, WordTranslation } from "@prisma/client";
 import type { TranslationService } from "@/lib/translation";
 import { normalizeWord } from "@/lib/validation";
 
+type WordWithTranslations = Word & { translations: WordTranslation[] };
+
 type WordStore = {
   findBook(id: string): Promise<Book | null>;
-  findWord(bookId: string, normalizedOriginal: string): Promise<Word | null>;
-  incrementWord(id: string, page?: number | null): Promise<Word>;
-  createWord(data: { bookId: string; original: string; normalizedOriginal: string; translation: string; page?: number | null; context?: string | null }): Promise<Word>;
+  findWord(bookId: string, normalizedOriginal: string): Promise<WordWithTranslations | null>;
+  incrementWord(id: string, page?: number | null): Promise<WordWithTranslations>;
+  createWord(data: { bookId: string; original: string; normalizedOriginal: string; translation: string; translationLanguage: string; page?: number | null; context?: string | null }): Promise<WordWithTranslations>;
 };
 
 export async function addWordToBook(
@@ -29,6 +31,6 @@ export async function addWordToBook(
     sourceLanguage: book.sourceLanguage,
     targetLanguage: book.targetLanguage,
   });
-  const word = await store.createWord({ ...input, original: input.original.trim(), normalizedOriginal, translation });
+  const word = await store.createWord({ ...input, original: input.original.trim(), normalizedOriginal, translation, translationLanguage: book.targetLanguage });
   return { kind: "created" as const, word };
 }

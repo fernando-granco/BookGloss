@@ -27,6 +27,8 @@ export const updateWordSchema = z.object({
   context: optionalText(2000),
   favorite: z.boolean().optional(),
   retranslate: z.boolean().optional(),
+  translateToLanguage: language.optional(),
+  selectTranslationLanguage: language.optional(),
 });
 
 export const settingsSchema = z.object({
