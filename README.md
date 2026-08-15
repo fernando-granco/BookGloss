@@ -11,12 +11,15 @@ BookGloss keeps unfamiliar words attached to the books where you found them. Typ
 - Translates through Google Cloud Translation on the server
 - Counts repeated encounters without creating duplicate rows
 - Preserves translations you edit by hand
+- Keeps a per-word translation history and lets you switch the displayed language
 - Stores optional page numbers, context, and favorites
 - Searches, filters, and sorts each book’s vocabulary
 - Supports polished light, dark, and system themes
 - Runs as one Docker container with persistent SQLite storage
 
 BookGloss intentionally has no accounts, analytics, gamification, flashcards, or additional services.
+
+New installations default to French source text translated into English. Both defaults remain editable in Settings, and each saved word can also be translated into additional languages from its edit menu.
 
 ## Quick start with Docker
 

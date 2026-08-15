@@ -8,7 +8,7 @@ export async function GET(_: Request, { params }: Context) {
   const { id } = await params;
   const book = await prisma.book.findUnique({
     where: { id },
-    include: { words: { orderBy: { createdAt: "desc" } }, _count: { select: { words: true } } },
+    include: { words: { include: { translations: { orderBy: { createdAt: "desc" } } }, orderBy: { createdAt: "desc" } }, _count: { select: { words: true } } },
   });
   return book ? Response.json(book) : Response.json({ error: "Book not found" }, { status: 404 });
 }

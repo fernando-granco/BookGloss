@@ -2,7 +2,7 @@ import { apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { settingsSchema } from "@/lib/validation";
 
-const defaults = { id: "singleton", defaultSourceLanguage: "en", defaultTargetLanguage: "pt", appearance: "system" };
+const defaults = { id: "singleton", defaultSourceLanguage: "fr", defaultTargetLanguage: "en", appearance: "system" };
 
 export async function GET() {
   const settings = await prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: defaults });

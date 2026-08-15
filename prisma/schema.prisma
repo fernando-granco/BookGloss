@@ -25,6 +25,7 @@ model Word {
   original                  String
   normalizedOriginal        String
   translation               String
+  translationLanguage       String
   context                   String?
   page                      Int?
   encounterCount            Int      @default(1)
@@ -33,16 +34,31 @@ model Word {
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
   lastEncounteredAt         DateTime @default(now())
+  translations              WordTranslation[]
 
   @@unique([bookId, normalizedOriginal])
   @@index([bookId, createdAt])
   @@index([bookId, favorite])
 }
 
+model WordTranslation {
+  id             String   @id @default(cuid())
+  wordId         String
+  word           Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  targetLanguage String
+  translation    String
+  manuallyEdited Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([wordId, targetLanguage])
+  @@index([wordId, createdAt])
+}
+
 model Settings {
   id                        String   @id @default("singleton")
-  defaultSourceLanguage     String   @default("en")
-  defaultTargetLanguage     String   @default("pt")
+  defaultSourceLanguage     String   @default("fr")
+  defaultTargetLanguage     String   @default("en")
   appearance                String   @default("system")
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
