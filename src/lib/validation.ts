@@ -34,6 +34,7 @@ export const updateWordSchema = z.object({
 export const settingsSchema = z.object({
   defaultSourceLanguage: language,
   defaultTargetLanguage: language,
+  showAllLanguages: z.boolean().default(false),
   appearance: z.enum(["system", "light", "dark"]),
 }).refine((settings) => settings.defaultSourceLanguage !== settings.defaultTargetLanguage, {
   message: "Default languages must be different",

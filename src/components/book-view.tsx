@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal } from "@/components/modal";
 import { WordForm, type WordInput } from "@/components/word-form";
 import { languageName } from "@/lib/languages";
-import type { BookDetail, VocabularyWord } from "@/lib/types";
+import type { BookDetail, SettingsData, VocabularyWord } from "@/lib/types";
 
 type Sort = "recent" | "oldest" | "az" | "za" | "encounters";
 
@@ -18,12 +18,13 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
 export function BookView({ bookId }: { bookId: string }) {
   const [book, setBook] = useState<BookDetail | null>(null);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
   const [word, setWord] = useState(""); const [page, setPage] = useState(""); const [context, setContext] = useState("");
   const [details, setDetails] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
   const [search, setSearch] = useState(""); const [sort, setSort] = useState<Sort>("recent"); const [favorites, setFavorites] = useState(false);
   const [editing, setEditing] = useState<VocabularyWord | null>(null); const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null); const searchRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { void request<BookDetail>(`/api/books/${bookId}`).then((data) => { setBook(data); requestAnimationFrame(() => inputRef.current?.focus()); }); }, [bookId]);
+  useEffect(() => { void Promise.all([request<BookDetail>(`/api/books/${bookId}`), request<SettingsData>("/api/settings")]).then(([data, settings]) => { setBook(data); setShowAllLanguages(settings.showAllLanguages); requestAnimationFrame(() => inputRef.current?.focus()); }); }, [bookId]);
   useEffect(() => { const handler = (e: KeyboardEvent) => { if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") { e.preventDefault(); searchRef.current?.focus(); } }; window.addEventListener("keydown", handler); return () => window.removeEventListener("keydown", handler); }, []);
 
   async function add(event: React.FormEvent) {
@@ -71,6 +72,6 @@ export function BookView({ bookId }: { bookId: string }) {
       <div className="word-meta">{item.page && <span>p. {item.page}</span>}{item.encounterCount > 1 && <strong>{item.encounterCount}×</strong>}</div>
       <div className="row-actions"><button className="icon-button" onClick={() => setEditing(item)} aria-label={`Edit ${item.original}`}><Pencil /></button><button className="icon-button danger" onClick={() => void remove(item)} aria-label={`Delete ${item.original}`}><Trash2 /></button></div>
     </article>)}</section>}
-    <Modal title="Edit word" open={Boolean(editing)} onClose={() => setEditing(null)}>{editing && <WordForm word={editing} sourceLanguage={book.sourceLanguage} onSubmit={saveEdit} onRetranslate={retranslateEdit} onTranslateTo={(language) => patchWord(editing.id, { translateToLanguage: language })} onSelectTranslation={(language) => patchWord(editing.id, { selectTranslationLanguage: language })} onCancel={() => setEditing(null)} />}</Modal>
+    <Modal title="Edit word" open={Boolean(editing)} onClose={() => setEditing(null)}>{editing && <WordForm word={editing} sourceLanguage={book.sourceLanguage} showAllLanguages={showAllLanguages} onSubmit={saveEdit} onRetranslate={retranslateEdit} onTranslateTo={(language) => patchWord(editing.id, { translateToLanguage: language })} onSelectTranslation={(language) => patchWord(editing.id, { selectTranslationLanguage: language })} onCancel={() => setEditing(null)} />}</Modal>
   </main>;
 }

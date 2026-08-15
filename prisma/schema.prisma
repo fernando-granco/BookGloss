@@ -59,6 +59,7 @@ model Settings {
   id                        String   @id @default("singleton")
   defaultSourceLanguage     String   @default("fr")
   defaultTargetLanguage     String   @default("en")
+  showAllLanguages          Boolean  @default(false)
   appearance                String   @default("system")
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
