@@ -20,3 +20,14 @@ export const languages = [
 export type LanguageCode = (typeof languages)[number][0];
 export const languageCodes = new Set<string>(languages.map(([code]) => code));
 export const languageName = (code: string) => languages.find(([value]) => value === code)?.[1] ?? code;
+
+export const defaultLanguageCodes = ["pt", "fr", "en", "es"] as const;
+
+export function languageOptions(showAll: boolean, include: string[] = []) {
+  if (showAll) return languages;
+  const codes = [...defaultLanguageCodes, ...include.filter((code) => !defaultLanguageCodes.includes(code as (typeof defaultLanguageCodes)[number]))];
+  return codes.flatMap((code) => {
+    const language = languages.find(([value]) => value === code);
+    return language ? [language] : [];
+  });
+}

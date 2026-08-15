@@ -110,6 +110,9 @@ kbd { font-size:10px; border:1px solid var(--border); border-radius:4px; padding
 .settings-card section { padding:29px 0; border-bottom:1px solid var(--border); }
 .settings-card h2 { margin:0 0 5px; font:500 23px Georgia,serif; }
 .settings-card section>p { color:var(--muted); font-size:13px; margin:0 0 20px; }
+.setting-toggle { display:flex; grid-column:1/-1; flex-direction:row; align-items:center; gap:11px; margin-top:16px; padding:13px 14px; border:1px solid var(--border); border-radius:9px; background:var(--bg); cursor:pointer; }
+.setting-toggle input { width:17px; height:17px; margin:0; accent-color:var(--accent); box-shadow:none; }
+.setting-toggle span { display:grid; gap:2px; }.setting-toggle strong { font-size:13px; }.setting-toggle small { color:var(--muted); font-weight:450; }
 .appearance-options { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
 .appearance-options label { display:flex; flex-direction:row; align-items:center; position:relative; padding:15px; border:1px solid var(--border); border-radius:9px; cursor:pointer; }
 .appearance-options label.selected { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--surface)); }

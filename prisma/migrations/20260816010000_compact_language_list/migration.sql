@@ -1,0 +1,1 @@
+ALTER TABLE "Settings" ADD COLUMN "showAllLanguages" BOOLEAN NOT NULL DEFAULT false;
