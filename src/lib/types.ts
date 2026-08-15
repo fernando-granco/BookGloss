@@ -1,6 +1,7 @@
 export type SettingsData = {
   defaultSourceLanguage: string;
   defaultTargetLanguage: string;
+  showAllLanguages: boolean;
   appearance: "system" | "light" | "dark";
 };
 

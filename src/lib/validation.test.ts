@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addWordSchema, bookSchema, normalizeWord, updateWordSchema } from "@/lib/validation";
+import { addWordSchema, bookSchema, normalizeWord, settingsSchema, updateWordSchema } from "@/lib/validation";
 
 describe("word normalization and validation", () => {
   it("normalizes whitespace, Unicode, and casing", () => {
@@ -20,5 +20,10 @@ describe("word normalization and validation", () => {
   it("accepts supported alternate translation languages", () => {
     expect(updateWordSchema.parse({ translateToLanguage: "pt" }).translateToLanguage).toBe("pt");
     expect(() => updateWordSchema.parse({ translateToLanguage: "not-a-language" })).toThrow();
+  });
+
+  it("keeps the compact language list as the settings default", () => {
+    const settings = settingsSchema.parse({ defaultSourceLanguage: "fr", defaultTargetLanguage: "en", appearance: "system" });
+    expect(settings.showAllLanguages).toBe(false);
   });
 });

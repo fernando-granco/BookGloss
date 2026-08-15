@@ -19,7 +19,7 @@ BookGloss keeps unfamiliar words attached to the books where you found them. Typ
 
 BookGloss intentionally has no accounts, analytics, gamification, flashcards, or additional services.
 
-New installations default to French source text translated into English. Both defaults remain editable in Settings, and each saved word can also be translated into additional languages from its edit menu.
+New installations default to French source text translated into English. Language menus initially show Portuguese, French, English, and Spanish; the full supported list can be enabled in Settings. Each saved word can also be translated into additional languages from its edit menu.
 
 ## Quick start with Docker
 

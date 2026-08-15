@@ -2,14 +2,15 @@
 
 import { Check, Languages } from "lucide-react";
 import { useMemo, useState } from "react";
-import { languageName, languages } from "@/lib/languages";
+import { languageName, languageOptions } from "@/lib/languages";
 import type { VocabularyWord } from "@/lib/types";
 
 export type WordInput = Pick<VocabularyWord, "original" | "translation" | "page" | "context">;
 
-export function WordForm({ word, sourceLanguage, onSubmit, onCancel, onRetranslate, onTranslateTo, onSelectTranslation }: {
+export function WordForm({ word, sourceLanguage, showAllLanguages, onSubmit, onCancel, onRetranslate, onTranslateTo, onSelectTranslation }: {
   word: VocabularyWord;
   sourceLanguage: string;
+  showAllLanguages: boolean;
   onSubmit: (input: WordInput) => Promise<void>;
   onCancel: () => void;
   onRetranslate: (input: WordInput) => Promise<VocabularyWord>;
@@ -18,7 +19,7 @@ export function WordForm({ word, sourceLanguage, onSubmit, onCancel, onRetransla
 }) {
   const [active, setActive] = useState(word);
   const [form, setForm] = useState<WordInput>({ original: word.original, translation: word.translation, page: word.page, context: word.context });
-  const availableLanguages = useMemo(() => languages.filter(([code]) => code !== sourceLanguage && !active.translations.some((item) => item.targetLanguage === code)), [active.translations, sourceLanguage]);
+  const availableLanguages = useMemo(() => languageOptions(showAllLanguages).filter(([code]) => code !== sourceLanguage && !active.translations.some((item) => item.targetLanguage === code)), [active.translations, showAllLanguages, sourceLanguage]);
   const [targetLanguage, setTargetLanguage] = useState<string>(() => availableLanguages[0]?.[0] ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +33,7 @@ export function WordForm({ word, sourceLanguage, onSubmit, onCancel, onRetransla
     const updated = await action();
     setActive(updated);
     setForm((current) => ({ ...current, translation: updated.translation }));
-    const remaining = languages.find(([code]) => code !== sourceLanguage && !updated.translations.some((item) => item.targetLanguage === code));
+    const remaining = languageOptions(showAllLanguages).find(([code]) => code !== sourceLanguage && !updated.translations.some((item) => item.targetLanguage === code));
     setTargetLanguage(remaining?.[0] ?? "");
   }
 

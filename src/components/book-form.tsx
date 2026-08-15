@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { languages } from "@/lib/languages";
+import { languageOptions } from "@/lib/languages";
 import type { BookSummary, SettingsData } from "@/lib/types";
 
 export type BookInput = Pick<BookSummary, "title" | "author" | "sourceLanguage" | "targetLanguage">;
@@ -13,6 +13,7 @@ export function BookForm({ initial, defaults, submitLabel, onSubmit, onCancel }:
   const [form, setForm] = useState<BookInput>(initial ?? { title: "", author: "", sourceLanguage: defaults.defaultSourceLanguage, targetLanguage: defaults.defaultTargetLanguage });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const languages = languageOptions(defaults.showAllLanguages, [form.sourceLanguage, form.targetLanguage]);
   const update = (key: keyof BookInput, value: string) => setForm((current) => ({ ...current, [key]: value }));
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
