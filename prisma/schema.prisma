@@ -8,33 +8,37 @@ datasource db {
 }
 
 model Book {
-  id             String   @id @default(cuid())
-  title          String
-  author         String?
-  sourceLanguage String
-  targetLanguage String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  words          Word[]
+  id                String   @id @default(cuid())
+  title             String
+  author            String?
+  sourceLanguage    String
+  targetLanguage    String
+  // Optional second target. When set, new words are translated into both languages.
+  secondaryLanguage String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  words             Word[]
 }
 
 model Word {
-  id                        String   @id @default(cuid())
-  bookId                    String
-  book                      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  original                  String
-  normalizedOriginal        String
-  translation               String
-  translationLanguage       String
-  context                   String?
-  page                      Int?
-  encounterCount            Int      @default(1)
-  favorite                  Boolean  @default(false)
-  translationManuallyEdited Boolean  @default(false)
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
-  lastEncounteredAt         DateTime @default(now())
-  translations              WordTranslation[]
+  id                 String   @id @default(cuid())
+  bookId             String
+  book               Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  original           String
+  normalizedOriginal String
+  // The translation shown first in the vocabulary list, mirrored from its WordTranslation.
+  translation        String
+  translationLanguage String
+  // Optional second translation shown under the first one. Never equal to translationLanguage.
+  secondaryLanguage  String?
+  context            String?
+  page               Int?
+  encounterCount     Int      @default(1)
+  favorite           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  lastEncounteredAt  DateTime @default(now())
+  translations       WordTranslation[]
 
   @@unique([bookId, normalizedOriginal])
   @@index([bookId, createdAt])
@@ -56,11 +60,12 @@ model WordTranslation {
 }
 
 model Settings {
-  id                        String   @id @default("singleton")
-  defaultSourceLanguage     String   @default("fr")
-  defaultTargetLanguage     String   @default("en")
-  showAllLanguages          Boolean  @default(false)
-  appearance                String   @default("system")
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  id                    String   @id @default("singleton")
+  defaultSourceLanguage String   @default("fr")
+  defaultTargetLanguage String   @default("en")
+  // Comma-separated language codes offered in every language menu.
+  enabledLanguages      String   @default("pt,en,fr,es")
+  appearance            String   @default("system")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }

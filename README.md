@@ -12,6 +12,7 @@ BookGloss keeps unfamiliar words attached to the books where you found them. Typ
 - Counts repeated encounters without creating duplicate rows
 - Preserves translations you edit by hand
 - Keeps a per-word translation history and lets you switch the displayed language
+- Shows up to two translations per word, automatically per book or chosen per word
 - Stores optional page numbers, context, and favorites
 - Searches, filters, and sorts each book’s vocabulary
 - Supports polished light, dark, and system themes
@@ -19,7 +20,23 @@ BookGloss keeps unfamiliar words attached to the books where you found them. Typ
 
 BookGloss intentionally has no accounts, analytics, gamification, flashcards, or additional services.
 
-New installations default to French source text translated into English. Language menus initially show Portuguese, French, English, and Spanish; the full supported list can be enabled in Settings. Each saved word can also be translated into additional languages from its edit menu.
+## Languages
+
+New installations default to French translated into English, with Portuguese, English, French,
+and Spanish available in every menu. Settings holds a checklist of all 62 supported languages:
+tick the ones you want and untick the rest, so a shelf of Italian books can offer nothing but
+Italian and German. A language already used by a book keeps appearing in that book's own form
+even if you later untick it, so nothing you have saved becomes unreachable.
+
+## Two translations at a time
+
+Each word shows one translation by default and can show a second underneath it:
+
+- **Per book** — give a book a *second translation* language and every new word in it is
+  translated into both at once.
+- **Per word** — open any word, add another language, and it fills the empty second slot.
+  The **1st** and **2nd** buttons next to each saved translation decide what the list shows;
+  everything else stays in the word's history.
 
 ## Quick start with Docker
 
@@ -87,6 +104,9 @@ npm run typecheck
 npm test
 npm run build
 ```
+
+`next build` emits a standalone server, so production runs `node .next/standalone/server.js`
+rather than `next start`. The Dockerfile assembles that output; for local work use `npm run dev`.
 
 ## Data and backups
 
