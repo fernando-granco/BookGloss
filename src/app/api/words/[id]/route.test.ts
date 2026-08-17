@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type Translation = { id: string; wordId: string; targetLanguage: string; translation: string; manuallyEdited: boolean; createdAt: Date; updatedAt: Date };
-type Word = { id: string; original: string; translation: string; translationLanguage: string; translationManuallyEdited: boolean; page: number | null; context: string | null; normalizedOriginal: string; favorite: boolean };
+type Word = { id: string; original: string; translation: string; translationLanguage: string; secondaryLanguage: string | null; page: number | null; context: string | null; normalizedOriginal: string; favorite: boolean };
 
 const book = { id: "book-1", sourceLanguage: "fr", targetLanguage: "en" };
 let word: Word;
@@ -12,12 +12,12 @@ const withHistory = () => ({ ...word, book, translations: [...history].sort((a, 
 
 const prisma = {
   word: {
-    findUnique: vi.fn(async () => (word ? withHistory() : null)),
+    findUnique: vi.fn(async () => withHistory()),
     findUniqueOrThrow: vi.fn(async () => withHistory()),
     update: vi.fn(async ({ data }: { data: Partial<Word> }) => { word = { ...word, ...data }; return withHistory(); }),
   },
   wordTranslation: {
-    create: vi.fn(async ({ data }: { data: Omit<Translation, "id" | "createdAt" | "updatedAt" | "manuallyEdited"> & { manuallyEdited?: boolean } }) => {
+    create: vi.fn(async ({ data }: { data: Omit<Translation, "id" | "createdAt" | "updatedAt" | "manuallyEdited"> }) => {
       const created = { id: `t-${history.length + 1}`, manuallyEdited: false, createdAt: at(20), updatedAt: at(20), ...data };
       history.push(created);
       return created;
@@ -44,58 +44,71 @@ const patch = async (body: unknown) => {
   const response = await PATCH(new Request("http://test/api/words/word-1", { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id: "word-1" }) });
   return { status: response.status, body: await response.json() };
 };
+const savedPt = () => history.push({ id: "t-2", wordId: "word-1", targetLanguage: "pt", translation: "calor", manuallyEdited: false, createdAt: at(12), updatedAt: at(12) });
 
 beforeEach(() => {
   vi.clearAllMocks();
-  word = { id: "word-1", original: "chaleur", translation: "heat", translationLanguage: "en", translationManuallyEdited: false, page: 142, context: null, normalizedOriginal: "chaleur", favorite: false };
+  word = { id: "word-1", original: "chaleur", translation: "heat", translationLanguage: "en", secondaryLanguage: null, page: 142, context: null, normalizedOriginal: "chaleur", favorite: false };
   history = [{ id: "t-1", wordId: "word-1", targetLanguage: "en", translation: "heat", manuallyEdited: false, createdAt: at(10), updatedAt: at(10) }];
 });
 
-describe("selecting a saved translation", () => {
-  it("switches the displayed translation and carries its manual flag", async () => {
-    history.push({ id: "t-2", wordId: "word-1", targetLanguage: "pt", translation: "calor à mão", manuallyEdited: true, createdAt: at(12), updatedAt: at(12) });
+describe("choosing which translations are shown", () => {
+  it("promotes a saved translation to the first slot", async () => {
+    savedPt();
     const { status, body } = await patch({ selectTranslationLanguage: "pt" });
     expect(status).toBe(200);
-    expect(body).toMatchObject({ translation: "calor à mão", translationLanguage: "pt", translationManuallyEdited: true });
+    expect(body).toMatchObject({ translation: "calor", translationLanguage: "pt" });
     expect(translate).not.toHaveBeenCalled();
     expect(history).toHaveLength(2);
   });
 
-  it("rejects a language that has not been saved yet", async () => {
-    const { status, body } = await patch({ selectTranslationLanguage: "es" });
-    expect(status).toBe(404);
-    expect(body.error).toMatch(/not been saved/);
+  it("never shows the same language in both slots", async () => {
+    savedPt();
+    await patch({ selectSecondaryLanguage: "pt" });
+    expect(word.secondaryLanguage).toBe("pt");
+    // Promoting the second slot pushes the old first translation into it.
+    await patch({ selectTranslationLanguage: "pt" });
+    expect(word).toMatchObject({ translationLanguage: "pt", secondaryLanguage: "en" });
+  });
+
+  it("sets and clears the second slot", async () => {
+    savedPt();
+    expect((await patch({ selectSecondaryLanguage: "pt" })).body).toMatchObject({ secondaryLanguage: "pt" });
+    expect((await patch({ selectSecondaryLanguage: null })).body).toMatchObject({ secondaryLanguage: null });
+  });
+
+  it("refuses a second slot that is not saved, or that repeats the first", async () => {
+    expect((await patch({ selectSecondaryLanguage: "es" })).status).toBe(404);
+    expect((await patch({ selectSecondaryLanguage: "en" })).status).toBe(400);
+    expect((await patch({ selectTranslationLanguage: "es" })).status).toBe(404);
   });
 });
 
 describe("adding another translation language", () => {
-  it("translates once and keeps the earlier translation in history", async () => {
+  it("translates once and fills the empty second slot without displacing the first", async () => {
     const { status, body } = await patch({ translateToLanguage: "pt" });
     expect(status).toBe(200);
     expect(translate).toHaveBeenCalledWith({ text: "chaleur", sourceLanguage: "fr", targetLanguage: "pt" });
-    expect(body).toMatchObject({ translation: "machine-pt", translationLanguage: "pt", translationManuallyEdited: false });
+    expect(body).toMatchObject({ translation: "heat", translationLanguage: "en", secondaryLanguage: "pt" });
     expect(history.map((item) => [item.targetLanguage, item.translation])).toEqual([["en", "heat"], ["pt", "machine-pt"]]);
   });
 
-  it("reuses an already saved language instead of translating again", async () => {
-    history.push({ id: "t-2", wordId: "word-1", targetLanguage: "pt", translation: "calor", manuallyEdited: false, createdAt: at(12), updatedAt: at(12) });
-    const { body } = await patch({ translateToLanguage: "pt" });
+  it("refuses to translate into the book's own source language", async () => {
+    expect((await patch({ translateToLanguage: "fr" })).status).toBe(400);
     expect(translate).not.toHaveBeenCalled();
-    expect(body).toMatchObject({ translation: "calor", translationLanguage: "pt" });
   });
 
-  it("refuses to translate into the book's own source language", async () => {
-    const { status, body } = await patch({ translateToLanguage: "fr" });
-    expect(status).toBe(400);
-    expect(body.error).toMatch(/different from the source language/);
+  it("refuses to translate a language that is already saved", async () => {
+    savedPt();
+    expect((await patch({ translateToLanguage: "pt" })).status).toBe(409);
     expect(translate).not.toHaveBeenCalled();
   });
 });
 
 describe("manual edits and retranslation", () => {
-  it("keeps a manual edit against the language it was written for", async () => {
+  it("keeps a manual edit against the language shown first", async () => {
     word.translationLanguage = "pt";
-    history.push({ id: "t-2", wordId: "word-1", targetLanguage: "pt", translation: "calor", manuallyEdited: false, createdAt: at(12), updatedAt: at(12) });
+    savedPt();
     await patch({ original: "chaleur", translation: "calor abafado", page: 142, context: null });
     expect(history.find((item) => item.targetLanguage === "pt")).toMatchObject({ translation: "calor abafado", manuallyEdited: true });
     expect(history.find((item) => item.targetLanguage === "en")).toMatchObject({ translation: "heat", manuallyEdited: false });
@@ -104,17 +117,15 @@ describe("manual edits and retranslation", () => {
   it("does not mark an unchanged translation as manually edited", async () => {
     await patch({ original: "chaleur", translation: "heat", page: 7, context: null });
     expect(word.page).toBe(7);
-    expect(word.translationManuallyEdited).toBe(false);
     expect(history[0]).toMatchObject({ translation: "heat", manuallyEdited: false });
   });
 
-  it("retranslates into the currently selected language, not the book target", async () => {
+  it("retranslates into the language shown first, not the book target", async () => {
     word.translationLanguage = "pt";
-    word.translationManuallyEdited = true;
-    history.push({ id: "t-2", wordId: "word-1", targetLanguage: "pt", translation: "meu texto", manuallyEdited: true, createdAt: at(12), updatedAt: at(12) });
+    savedPt();
     await patch({ original: "chaleur", translation: "meu texto", page: 142, context: null, retranslate: true });
     expect(translate).toHaveBeenCalledWith({ text: "chaleur", sourceLanguage: "fr", targetLanguage: "pt" });
-    expect(word).toMatchObject({ translation: "machine-pt", translationManuallyEdited: false });
+    expect(word.translation).toBe("machine-pt");
     expect(history.find((item) => item.targetLanguage === "pt")).toMatchObject({ translation: "machine-pt", manuallyEdited: false });
     expect(history.find((item) => item.targetLanguage === "en")).toMatchObject({ translation: "heat" });
   });
