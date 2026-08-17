@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { languageCodes } from "@/lib/languages";
+import { languageCodes, minimumEnabledLanguages } from "@/lib/languages";
 
 const language = z.string().refine((value) => languageCodes.has(value), "Choose a supported language");
+const optionalLanguage = language.nullable().optional();
 const optionalText = (max: number) => z.string().trim().max(max).optional().nullable();
 
 export const bookSchema = z.object({
@@ -9,9 +10,13 @@ export const bookSchema = z.object({
   author: optionalText(200),
   sourceLanguage: language,
   targetLanguage: language,
+  secondaryLanguage: optionalLanguage,
 }).refine((book) => book.sourceLanguage !== book.targetLanguage, {
   message: "Source and target languages must be different",
   path: ["targetLanguage"],
+}).refine((book) => !book.secondaryLanguage || (book.secondaryLanguage !== book.sourceLanguage && book.secondaryLanguage !== book.targetLanguage), {
+  message: "The second language must differ from the source and the first translation",
+  path: ["secondaryLanguage"],
 });
 
 export const addWordSchema = z.object({
@@ -29,16 +34,21 @@ export const updateWordSchema = z.object({
   retranslate: z.boolean().optional(),
   translateToLanguage: language.optional(),
   selectTranslationLanguage: language.optional(),
+  // null clears the second translation shown in the vocabulary list.
+  selectSecondaryLanguage: optionalLanguage,
 });
 
 export const settingsSchema = z.object({
   defaultSourceLanguage: language,
   defaultTargetLanguage: language,
-  showAllLanguages: z.boolean().default(false),
+  enabledLanguages: z.array(language).min(minimumEnabledLanguages, "Enable at least two languages").max(languageCodes.size),
   appearance: z.enum(["system", "light", "dark"]),
 }).refine((settings) => settings.defaultSourceLanguage !== settings.defaultTargetLanguage, {
   message: "Default languages must be different",
   path: ["defaultTargetLanguage"],
+}).refine((settings) => [settings.defaultSourceLanguage, settings.defaultTargetLanguage].every((code) => settings.enabledLanguages.includes(code)), {
+  message: "Keep the default languages enabled",
+  path: ["enabledLanguages"],
 });
 
 export function normalizeWord(value: string) {

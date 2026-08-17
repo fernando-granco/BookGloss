@@ -1,20 +1,34 @@
 import { apiError } from "@/lib/api";
+import { defaultLanguageCodes, parseEnabledLanguages, serializeEnabledLanguages } from "@/lib/languages";
 import { prisma } from "@/lib/prisma";
 import { settingsSchema } from "@/lib/validation";
 
-const defaults = { id: "singleton", defaultSourceLanguage: "fr", defaultTargetLanguage: "en", showAllLanguages: false, appearance: "system" };
+const defaults = {
+  id: "singleton",
+  defaultSourceLanguage: "fr",
+  defaultTargetLanguage: "en",
+  enabledLanguages: serializeEnabledLanguages([...defaultLanguageCodes]),
+  appearance: "system",
+};
+
+type StoredSettings = { enabledLanguages: string };
+const present = <T extends StoredSettings>({ enabledLanguages, ...rest }: T) => ({ ...rest, enabledLanguages: parseEnabledLanguages(enabledLanguages) });
 
 export async function GET() {
-  const settings = await prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: defaults });
-  return Response.json(settings);
+  try {
+    return Response.json(present(await prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: defaults })));
+  } catch (error) {
+    return apiError(error, "Could not load settings");
+  }
 }
 
 export async function PUT(request: Request) {
   try {
-    const data = settingsSchema.parse(await request.json());
-    return Response.json(await prisma.settings.upsert({
-      where: { id: "singleton" }, update: data, create: { ...defaults, ...data },
-    }));
+    const { enabledLanguages, ...data } = settingsSchema.parse(await request.json());
+    const stored = { ...data, enabledLanguages: serializeEnabledLanguages(enabledLanguages) };
+    return Response.json(present(await prisma.settings.upsert({
+      where: { id: "singleton" }, update: stored, create: { ...defaults, ...stored },
+    })));
   } catch (error) {
     return apiError(error, "Could not save settings");
   }

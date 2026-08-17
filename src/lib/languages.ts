@@ -1,4 +1,6 @@
-export const languages = [
+export type Language = readonly [code: string, name: string];
+
+export const languages: readonly Language[] = [
   ["af", "Afrikaans"], ["sq", "Albanian"], ["am", "Amharic"], ["ar", "Arabic"],
   ["hy", "Armenian"], ["az", "Azerbaijani"], ["eu", "Basque"], ["be", "Belarusian"],
   ["bn", "Bengali"], ["bs", "Bosnian"], ["bg", "Bulgarian"], ["ca", "Catalan"],
@@ -15,19 +17,29 @@ export const languages = [
   ["sw", "Swahili"], ["sv", "Swedish"], ["ta", "Tamil"], ["te", "Telugu"],
   ["th", "Thai"], ["tr", "Turkish"], ["uk", "Ukrainian"], ["ur", "Urdu"],
   ["vi", "Vietnamese"], ["cy", "Welsh"],
-] as const;
+];
 
-export type LanguageCode = (typeof languages)[number][0];
-export const languageCodes = new Set<string>(languages.map(([code]) => code));
+export const languageCodes = new Set(languages.map(([code]) => code));
 export const languageName = (code: string) => languages.find(([value]) => value === code)?.[1] ?? code;
 
-export const defaultLanguageCodes = ["pt", "fr", "en", "es"] as const;
+/** Enabled out of the box. Every other language is opt-in from Settings. */
+export const defaultLanguageCodes = ["pt", "en", "fr", "es"];
 
-export function languageOptions(showAll: boolean, include: string[] = []) {
-  if (showAll) return languages;
-  const codes = [...defaultLanguageCodes, ...include.filter((code) => !defaultLanguageCodes.includes(code as (typeof defaultLanguageCodes)[number]))];
-  return codes.flatMap((code) => {
-    const language = languages.find(([value]) => value === code);
-    return language ? [language] : [];
-  });
+/** Two languages are the minimum needed to describe a source and a different target. */
+export const minimumEnabledLanguages = 2;
+
+export function parseEnabledLanguages(value: string | null | undefined): string[] {
+  const codes = [...new Set((value ?? "").split(",").map((code) => code.trim()).filter((code) => languageCodes.has(code)))];
+  return codes.length >= minimumEnabledLanguages ? codes : [...defaultLanguageCodes];
+}
+
+export const serializeEnabledLanguages = (codes: string[]) => [...new Set(codes)].join(",");
+
+/**
+ * Languages offered in a menu: the enabled set, plus any code already in use, so an
+ * existing book or saved translation never vanishes from its own form.
+ */
+export function languageOptions(enabled: string[], include: (string | null | undefined)[] = []): Language[] {
+  const codes = new Set([...enabled, ...include.filter((code): code is string => Boolean(code))]);
+  return languages.filter(([code]) => codes.has(code));
 }

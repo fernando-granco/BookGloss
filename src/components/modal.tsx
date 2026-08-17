@@ -13,7 +13,7 @@ export function Modal({ title, open, onClose, children }: { title: string; open:
   }, [open]);
   return (
     <dialog ref={ref} onClose={onClose} className="modal">
-      <div className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></div>
+      <div className="modal-head"><h2>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label="Close"><X /></button></div>
       {children}
     </dialog>
   );

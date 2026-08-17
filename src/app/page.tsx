@@ -5,10 +5,10 @@ import { BookOpen, Ellipsis, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { BookForm, type BookInput } from "@/components/book-form";
 import { Modal } from "@/components/modal";
-import { languageName } from "@/lib/languages";
+import { defaultLanguageCodes, languageName } from "@/lib/languages";
 import type { BookSummary, SettingsData } from "@/lib/types";
 
-const fallback: SettingsData = { defaultSourceLanguage: "fr", defaultTargetLanguage: "en", showAllLanguages: false, appearance: "system" };
+const fallback: SettingsData = { defaultSourceLanguage: "fr", defaultTargetLanguage: "en", enabledLanguages: [...defaultLanguageCodes], appearance: "system" };
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
@@ -42,6 +42,7 @@ export default function BooksPage() {
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not delete the book"); }
     await load();
   }
+  const pair = (book: BookSummary) => [book.targetLanguage, ...(book.secondaryLanguage ? [book.secondaryLanguage] : [])].map(languageName).join(" + ");
   return (
     <main className="shell page">
       <div className="page-title"><div><p className="eyebrow">Your library</p><h1>Books</h1><p>Every unfamiliar word, kept with the story where you found it.</p></div><button className="button" onClick={() => setEditing(null)}><Plus size={18} /> Add book</button></div>
@@ -52,11 +53,12 @@ export default function BooksPage() {
       ) : <section className="book-grid">{books.map((book) => (
         <article className="book-card" key={book.id}>
           <div className="book-actions"><button className="icon-button" aria-label={`Actions for ${book.title}`}><Ellipsis /></button><div className="menu"><button onClick={() => setEditing(book)}>Edit</button><button className="danger" onClick={() => void remove(book)}>Delete</button></div></div>
-          <Link href={`/books/${book.id}`}><div className="book-mark" aria-hidden="true" /><h2>{book.title}</h2><p className="author">{book.author || "Unknown author"}</p><div className="card-meta"><span>{languageName(book.sourceLanguage)} → {languageName(book.targetLanguage)}</span><span>{book._count.words} {book._count.words === 1 ? "word" : "words"}</span></div></Link>
+          <Link href={`/books/${book.id}`}><div className="book-mark" aria-hidden="true" /><h2>{book.title}</h2><p className="author">{book.author || "Unknown author"}</p><div className="card-meta"><span>{languageName(book.sourceLanguage)} → {pair(book)}</span><span>{book._count.words} {book._count.words === 1 ? "word" : "words"}</span></div></Link>
         </article>
       ))}</section>}
+      {/* Mounted only while open so the form always starts from the settings that are loaded now. */}
       <Modal title={editing ? "Edit book" : "Add a book"} open={editing !== undefined} onClose={() => setEditing(undefined)}>
-        <BookForm key={editing?.id ?? "new"} initial={editing ?? undefined} defaults={settings} submitLabel={editing ? "Save changes" : "Add book"} onSubmit={save} onCancel={() => setEditing(undefined)} />
+        {editing !== undefined && <BookForm initial={editing ?? undefined} defaults={settings} submitLabel={editing ? "Save changes" : "Add book"} onSubmit={save} onCancel={() => setEditing(undefined)} />}
       </Modal>
     </main>
   );

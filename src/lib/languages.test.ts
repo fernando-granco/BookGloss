@@ -1,16 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { languageOptions, languages } from "@/lib/languages";
+import { defaultLanguageCodes, languageOptions, languages, parseEnabledLanguages, serializeEnabledLanguages } from "@/lib/languages";
+
+const codes = (list: readonly (readonly [string, string])[]) => list.map(([code]) => code);
 
 describe("language options", () => {
-  it("shows the four focused languages by default", () => {
-    expect(languageOptions(false).map(([code]) => code)).toEqual(["pt", "fr", "en", "es"]);
+  it("offers only the enabled languages", () => {
+    expect(codes(languageOptions(["it", "de"]))).toEqual(["de", "it"]);
   });
 
-  it("keeps an existing uncommon selection visible", () => {
-    expect(languageOptions(false, ["de"]).map(([code]) => code)).toEqual(["pt", "fr", "en", "es", "de"]);
+  it("keeps a language already in use visible even when it is disabled", () => {
+    expect(codes(languageOptions(["it", "de"], ["sv"]))).toEqual(["de", "it", "sv"]);
+    expect(codes(languageOptions(["it", "de"], [null, undefined]))).toEqual(["de", "it"]);
   });
 
-  it("returns the full catalog when expanded", () => {
-    expect(languageOptions(true)).toBe(languages);
+  it("defaults to Portuguese, English, French, and Spanish", () => {
+    expect(codes(languageOptions([...defaultLanguageCodes])).sort()).toEqual(["en", "es", "fr", "pt"]);
+  });
+
+  it("can enable the whole catalog", () => {
+    expect(languageOptions(languages.map(([code]) => code))).toHaveLength(languages.length);
+  });
+});
+
+describe("enabled language storage", () => {
+  it("round-trips through the stored string", () => {
+    expect(parseEnabledLanguages(serializeEnabledLanguages(["it", "de", "it"]))).toEqual(["it", "de"]);
+  });
+
+  it("falls back to the defaults when the stored value is unusable", () => {
+    for (const value of ["", null, undefined, "not-a-language", "en"]) {
+      expect(parseEnabledLanguages(value)).toEqual([...defaultLanguageCodes]);
+    }
+  });
+
+  it("drops unknown codes but keeps a usable selection", () => {
+    expect(parseEnabledLanguages("it, de ,made-up")).toEqual(["it", "de"]);
   });
 });
