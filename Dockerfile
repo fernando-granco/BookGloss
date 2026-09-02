@@ -13,16 +13,17 @@ COPY . .
 RUN mkdir -p public && npm run build
 
 # The Prisma CLI applies migrations at startup. It is not part of the traced server
-# bundle, so install it on its own at the version the lockfile pins.
+# bundle, so install it on its own. Reusing the app's package.json keeps its dependency
+# overrides in force here; only the pinned Prisma CLI is kept as a dependency.
 FROM base AS cli
 WORKDIR /cli
-COPY package-lock.json ./
+COPY package.json package-lock.json ./
 RUN VERSION="$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version")" \
     && rm package-lock.json \
-    && npm init -y > /dev/null \
-    && npm install --omit=dev --no-audit --no-fund "prisma@${VERSION}" \
+    && npm pkg delete scripts devDependencies dependencies \
+    && npm pkg set dependencies.prisma="${VERSION}" \
+    && npm install --omit=dev --no-audit --no-fund \
     && npm cache clean --force \
-    # The server bundle already carries the client; the CLI only needs the schema engine.
     && rm -rf /cli/node_modules/@prisma/client /cli/node_modules/.prisma
 
 FROM base AS runner
