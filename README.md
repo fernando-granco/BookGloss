@@ -4,6 +4,9 @@ BookGloss is a small, self-hosted vocabulary app for readers. Add an unfamiliar 
 
 It is designed for personal use on a trusted network. Translation requires access to the Google Cloud Translation API.
 
+> [!WARNING]
+> BookGloss has **no built-in authentication or user accounts**. Anyone who can reach the port can read and edit everything. Run it on a private LAN only, or put your own access control in front of it (for example Cloudflare Access, Authelia, Tailscale, or an authenticated reverse proxy). Never expose it directly to the internet.
+
 ## Screenshots
 
 <p align="center">
