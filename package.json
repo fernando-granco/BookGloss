@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A calm, keyboard-first reading companion for collecting unfamiliar words.",
   "private": true,
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fernando-granco/BookGloss.git"
