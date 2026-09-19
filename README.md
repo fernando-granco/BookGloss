@@ -112,4 +112,4 @@ BookGloss has no built-in authentication. Keep it on a private network or place 
 
 ## License
 
-BookGloss is available under the [MIT License](LICENSE).
+BookGloss is available under the [GNU AGPLv3 License](LICENSE).
