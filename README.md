@@ -1,5 +1,8 @@
 # BookGloss
 
+[![CI](https://github.com/fernando-granco/BookGloss/actions/workflows/ci.yml/badge.svg)](https://github.com/fernando-granco/BookGloss/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-345a51.svg)](LICENSE)
+
 BookGloss is a small, self-hosted vocabulary app for readers. Add an unfamiliar word while reading and it is translated, saved under the book where you found it, and ready to review later.
 
 It is designed for personal use on a trusted network. Translation requires access to the Google Cloud Translation API.
